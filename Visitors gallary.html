@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Picture Upload Gallery</title>
+    <style>
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Body and Container Styling */
+        body {
+            background-color: #000; /* Black background */
+            color: #FFF; /* White text for better contrast */
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #111; /* Slightly lighter black */
+            border-radius: 10px;
+        }
+
+        /* Header and Footer Styling */
+        header, footer {
+            background-color: #FF0000; /* Red background */
+            color: #FFF; /* White text */
+            padding: 10px 0;
+            margin-bottom: 20px;
+        }
+
+        header h1, footer p {
+            margin: 0;
+        }
+
+        /* Upload Button Styling */
+        .upload-button {
+            display: inline-block;
+            width: 50px; /* Button width */
+            height: 50px; /* Button height */
+            background-color: #FF0000; /* Red button background */
+            color: #FFF; /* White button text */
+            border: none;
+            border-radius: 50%; /* Make the button round */
+            cursor: pointer;
+            font-size: 24px; /* Larger plus icon */
+            line-height: 50px; /* Center the plus icon vertically */
+            position: relative;
+            transition: background-color 0.3s ease;
+        }
+
+        .upload-button:hover {
+            background-color: #cc0000; /* Darker red on hover */
+        }
+
+        .upload-button::before {
+            content: '+'; /* Plus icon */
+            font-size: 24px; /* Font size of the plus icon */
+            color: #FFF; /* Color of the plus icon */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Center the plus icon */
+        }
+
+        /* Hidden File Input Styling */
+        #fileInput {
+            display: none; /* Hide the default file input */
+        }
+
+        /* Gallery Styling */
+        #gallery {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            justify-items: center;
+        }
+
+        .image-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        #gallery img {
+            max-width: 100%;
+            border-radius: 5px;
+            border: 2px solid #FF0000; /* Red border */
+            transition: transform 0.3s ease;
+        }
+
+        #gallery img:hover {
+            transform: scale(1.05);
+        }
+
+        /* Delete Button Styling */
+        .delete-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: rgba(255, 0, 0, 0.7); /* Semi-transparent red */
+            color: #FFF; /* White text */
+            border: none;
+            border-radius: 50%;
+            padding: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            display: none; /* Hidden by default */
+        }
+
+        .image-container:hover .delete-button {
+            display: block; /* Show delete button on hover */
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <h1>Picture Upload Gallery</h1>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Upload Form -->
+        <form id="uploadForm">
+            <!-- Custom Round Button to Open File Input -->
+            <label class="upload-button" for="fileInput"></label>
+            <input type="file" id="fileInput" multiple accept="image/*">
+        </form>
+
+        <!-- Gallery Section -->
+        <div id="gallery"></div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 Your Website Name. All rights reserved.</p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        const ADMIN_PASSWORD = 'your_admin_password'; // Set your admin password here
+
+        // Function to load saved images from local storage
+        function loadSavedImages() {
+            const gallery = document.getElementById('gallery');
+            const savedImages = JSON.parse(localStorage.getItem('uploadedImages')) || [];
+
+            savedImages.forEach(src => {
+                addImageToGallery(src);
+            });
+        }
+
+        // Function to add an image to the gallery with a delete button
+        function addImageToGallery(src) {
+            const gallery = document.getElementById('gallery');
+            const imageContainer = document.createElement('div');
+            imageContainer.className = 'image-container';
+
+            const img = document.createElement('img');
+            img.src = src;
+
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-button';
+            deleteButton.innerText = 'X';
+            deleteButton.onclick = function () {
+                verifyAdminAndDelete(src);
+            };
+
+            imageContainer.appendChild(img);
+            imageContainer.appendChild(deleteButton);
+            gallery.appendChild(imageContainer);
+        }
+
+        // Function to verify admin password and delete an image if verified
+        function verifyAdminAndDelete(src) {
+            const password = prompt('Enter admin password to delete this image:');
+            if (password === 'dibya@graphic') {
+                deleteImage(src);
+            } else {
+                alert('Incorrect password. You do not have permission to delete this image.');
+            }
+        }
+
+        // Function to delete an image from the gallery and local storage
+        function deleteImage(src) {
+            const gallery = document.getElementById('gallery');
+            let uploadedImages = JSON.parse(localStorage.getItem('uploadedImages')) || [];
+
+            // Remove the image from local storage
+            uploadedImages = uploadedImages.filter(image => image !== src);
+            localStorage.setItem('uploadedImages', JSON.stringify(uploadedImages));
+
+            // Remove the image element from the gallery
+            gallery.innerHTML = '';
+            uploadedImages.forEach(image => addImageToGallery(image));
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const fileInput = document.getElementById('fileInput');
+            let uploadedImages = JSON.parse(localStorage.getItem('uploadedImages')) || [];
+
+            // Load saved images on page load
+            loadSavedImages();
+
+            fileInput.addEventListener('change', function () {
+                // Check if adding the new files exceeds the limit of 50
+                if (uploadedImages.length + fileInput.files.length > 50) {
+                    alert('You can only upload a maximum of 50 images.');
+                    return;
+                }
+
+                // Loop through selected files
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    const file = fileInput.files[i];
+
+                    if (uploadedImages.length < 50) {
+                        const reader = new FileReader();
+                        reader.onload = function (event) {
+                            const src = event.target.result;
+                            addImageToGallery(src);
+                            uploadedImages.push(src);
+
+                            // Save the images to local storage
+                            localStorage.setItem('uploadedImages', JSON.stringify(uploadedImages));
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        break; // Exit loop if limit is reached
+                    }
+                }
+
+                fileInput.value = ''; // Clear the file input
+            });
+        });
+    </script>
+</body>
+</html>
